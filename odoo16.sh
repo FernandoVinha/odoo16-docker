@@ -3,6 +3,9 @@
 # Solicita o nome do projeto ao usuário
 read -p "Enter the project name: " PROJECT_NAME
 
+# Pergunta se deve criar um repositório no GitHub
+read -p "Create a private GitHub repository for the project? (y/n): " CREATE_GITHUB_REPO
+
 # Define o diretório do script e o caminho para os módulos adicionais
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ADDITIONAL_MODULES_PATH="${SCRIPT_DIR}/${PROJECT_NAME}/addons"
@@ -83,13 +86,38 @@ while ! is_port_free $PORT; do
     PORT=$((PORT + 1))
 done
 
+# Configura o Odoo para ouvir em todos os endereços IP
+ODDO_CONFIG_PATH="${SCRIPT_DIR}/${PROJECT_NAME}/odoo.conf"
+echo "[options]" > "$ODDO_CONFIG_PATH"
+echo "xmlrpc_interface = 0.0.0.0" >> "$ODDO_CONFIG_PATH"
+
 # Inicia o container Odoo
 echo "Starting the Odoo container named ${PROJECT_NAME}_odoo on port $PORT..."
 docker run -d \
     -p $PORT:8069 \
     -v ${ADDITIONAL_MODULES_PATH}:/mnt/extra-addons \
+    -v ${ODDO_CONFIG_PATH}:/etc/odoo/odoo.conf \
     --name ${PROJECT_NAME}_odoo \
     --link ${PROJECT_NAME}_db:db \
     odoo:16.0
+
+# Cria um repositório privado no GitHub, se selecionado
+if [[ $CREATE_GITHUB_REPO == "y" || $CREATE_GITHUB_REPO == "Y" ]]; then
+    # Você precisará configurar as credenciais do GitHub aqui
+    GITHUB_USERNAME="seu_nome_de_usuário"
+    GITHUB_TOKEN="seu_token_de_acesso_pessoal"
+
+    # Crie um repositório privado no GitHub com o nome "odoo-PROJECT_NAME"
+    curl -X POST -H "Authorization: token $GITHUB_TOKEN" -d '{"name": "'${PROJECT_NAME}'", "private": true}' https://api.github.com/user/repos
+
+    # Configure o repositório Git local e faça o upload dos addons
+    cd ${ADDITIONAL_MODULES_PATH}
+    git init
+    git add .
+    git commit -m "Initial commit"
+    git branch -M main
+    git remote add origin https://github.com/${GITHUB_USERNAME}/odoo-${PROJECT_NAME}.git
+    git push -u origin main
+fi
 
 echo "Done! Odoo should be available at http://localhost:$PORT"
