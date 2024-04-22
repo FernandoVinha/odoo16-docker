@@ -89,7 +89,7 @@ done
 # Configura o Odoo para ouvir em todos os endereços IP
 ODDO_CONFIG_PATH="${SCRIPT_DIR}/${PROJECT_NAME}/odoo.conf"
 echo "[options]" > "$ODDO_CONFIG_PATH"
-echo "xmlrpc_interface = 0.0.0.0" >> "$ODDO_CONFIG_PATH"
+echo "xmlrpc_interface = 	177.73.234.198" >> "$ODDO_CONFIG_PATH"
 
 # Inicia o container Odoo
 echo "Starting the Odoo container named ${PROJECT_NAME}_odoo on port $PORT..."
